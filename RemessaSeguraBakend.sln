@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemessaSeguraBakend", "RemessaSeguraBakend\RemessaSeguraBakend.csproj", "{FBF9332E-97E3-431A-A434-BAB90D9C841A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeradorSenha", "GeradorSenha\GeradorSenha.csproj", "{572D6548-FCE3-45AF-91D3-B0F4988FAD84}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FBF9332E-97E3-431A-A434-BAB90D9C841A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBF9332E-97E3-431A-A434-BAB90D9C841A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBF9332E-97E3-431A-A434-BAB90D9C841A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBF9332E-97E3-431A-A434-BAB90D9C841A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{572D6548-FCE3-45AF-91D3-B0F4988FAD84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{572D6548-FCE3-45AF-91D3-B0F4988FAD84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{572D6548-FCE3-45AF-91D3-B0F4988FAD84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{572D6548-FCE3-45AF-91D3-B0F4988FAD84}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C11F9CA4-5D7A-479D-8C6B-4D8580578197}
+	EndGlobalSection
+EndGlobal

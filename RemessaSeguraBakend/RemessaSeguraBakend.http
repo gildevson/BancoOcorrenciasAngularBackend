@@ -1,0 +1,6 @@
+@RemessaSeguraBakend_HostAddress = http://localhost:5231
+
+GET {{RemessaSeguraBakend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
