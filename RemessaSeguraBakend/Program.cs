@@ -16,6 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 // ===============================================
 builder.Services.Configure<ForwardedHeadersOptions>(options => {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 // ===============================================
@@ -36,26 +38,42 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSingleton<DbConnectionFactory>();
 
 // ===============================================
-// 3. CORS - FRONTEND (Hostinger) + Local
+// 3. CORS - CONFIGURAÇÃO COMPLETA
 // ===============================================
-const string CorsPolicy = "Front";
+const string CorsPolicy = "RemessaSeguraPolicy";
+
 builder.Services.AddCors(options => {
     options.AddPolicy(CorsPolicy, policy => {
-        policy.WithOrigins(
-                "http://localhost:4200",
-                "https://bancoocorrencia.com",
-                "https://www.bancoocorrencia.com"
-              )
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-        // ⚠️ JWT em header NÃO precisa AllowCredentials().
-        // Se você usar cookies/sessão, aí sim habilita:
-        // .AllowCredentials();
+        // Ambiente de desenvolvimento
+        if (builder.Environment.IsDevelopment()) {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        }
+        // Ambiente de produção
+        else {
+            policy.WithOrigins(
+                    // Frontend em produção (Hostinger)
+                    "https://bancoocorrencia.com",
+                    "https://www.bancoocorrencia.com",
+
+                    // API Backend (Koyeb) - para requisições internas
+                    "https://exceptional-melita-gildevson-sistemas-1fffc163.koyeb.app",
+
+                    // Local development
+                    "http://localhost:4200",
+                    "http://localhost:5000",
+                    "https://localhost:5001"
+                  )
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .WithExposedHeaders("Token-Expired", "Authorization");
+        }
     });
 });
 
 // ===============================================
-// 4. INJEÇÃO DE DEPENDÊNCIA
+// 4. INJEÇÃO DE DEPENDÊNCIA - REPOSITORIES
 // ===============================================
 builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<PermissaoRepository>();
@@ -65,49 +83,56 @@ builder.Services.AddScoped<ResetSenhaRepository>();
 builder.Services.AddScoped<OcorrenciasMotivosRepository>();
 builder.Services.AddScoped<BancosRepository>();
 
+// ===============================================
+// 5. INJEÇÃO DE DEPENDÊNCIA - SERVICES
+// ===============================================
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<PasswordResetService>();
 
 // ===============================================
-// 5. CLIENTES HTTP
+// 6. CLIENTES HTTP
 // ===============================================
 builder.Services.AddMemoryCache();
 
-// ✅ BRAPI (ajustado para bater com seu appsettings: BrapiSettings)
-var brapiBase = (builder.Configuration["BrapiSettings:BaseUrl"] ?? "https://brapi.dev/api/")
-    .TrimEnd('/') + "/";
-
-var brapiToken = builder.Configuration["BrapiSettings:ApiKey"]; // sua key
+// BRAPI - API de Ações
+var brapiBase = (builder.Configuration["BrapiSettings:BaseUrl"] ?? "https://brapi.dev/api/").TrimEnd('/') + "/";
+var brapiToken = builder.Configuration["BrapiSettings:ApiKey"];
 
 builder.Services.AddHttpClient("brapi", c => {
     c.BaseAddress = new Uri(brapiBase);
     c.Timeout = TimeSpan.FromSeconds(30);
+    c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-    // Se sua BRAPI usa header "Authorization: Bearer <token>", mantém assim:
-    if (!string.IsNullOrWhiteSpace(brapiToken))
+    if (!string.IsNullOrWhiteSpace(brapiToken)) {
         c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", brapiToken);
+    }
 });
 
-// ✅ AwesomeAPI (moedas)
+// AwesomeAPI - Cotações de Moedas
 builder.Services.AddHttpClient("awesomeapi", c => {
     c.BaseAddress = new Uri("https://economia.awesomeapi.com.br/");
     c.Timeout = TimeSpan.FromSeconds(30);
+    c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 });
 
-// (Opcional) client genérico
+// Cliente HTTP genérico
 builder.Services.AddHttpClient();
 
 // ===============================================
-// 6. AUTENTICAÇÃO JWT
+// 7. AUTENTICAÇÃO JWT
 // ===============================================
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-if (string.IsNullOrWhiteSpace(jwtKey))
-    throw new Exception("JWT:Key não encontrada. Configure Jwt__Key no ambiente (Koyeb).");
+if (string.IsNullOrWhiteSpace(jwtKey)) {
+    throw new InvalidOperationException(
+        "JWT:Key não configurada. " +
+        "Configure a variável de ambiente 'Jwt__Key' no Koyeb."
+    );
+}
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options => {
@@ -125,9 +150,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
         options.Events = new JwtBearerEvents {
             OnAuthenticationFailed = context => {
-                if (context.Exception is SecurityTokenExpiredException)
+                if (context.Exception is SecurityTokenExpiredException) {
                     context.Response.Headers.Append("Token-Expired", "true");
-
+                }
+                return Task.CompletedTask;
+            },
+            OnChallenge = context => {
+                // Log para debug em caso de falha na autenticação
+                if (builder.Environment.IsDevelopment()) {
+                    Console.WriteLine($"OnChallenge error: {context.Error}, {context.ErrorDescription}");
+                }
                 return Task.CompletedTask;
             }
         };
@@ -136,18 +168,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // ===============================================
-// 7. SWAGGER
+// 8. SWAGGER / OpenAPI
 // ===============================================
 builder.Services.AddSwaggerGen(c => {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "RemessaSegura API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo {
+        Title = "RemessaSegura API",
+        Version = "v1",
+        Description = "API para gestão de remessas seguras e notícias financeiras",
+        Contact = new OpenApiContact {
+            Name = "Suporte RemessaSegura",
+            Email = "suporte@bancoocorrencia.com"
+        }
+    });
 
+    // Configuração de segurança JWT no Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Insira o token JWT desta forma: Bearer {seu_token}"
+        Description = "Insira o token JWT no formato: Bearer {seu_token}"
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -155,40 +196,76 @@ builder.Services.AddSwaggerGen(c => {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
             },
             Array.Empty<string>()
         }
     });
 });
 
+// ===============================================
+// BUILD DA APLICAÇÃO
+// ===============================================
 var app = builder.Build();
 
 // ===============================================
-// 8. MIDDLEWARES
+// 9. MIDDLEWARES PIPELINE
 // ===============================================
 
-// ✅ Importantíssimo atrás de proxy (Koyeb)
+// Forwarded Headers - DEVE SER O PRIMEIRO
 app.UseForwardedHeaders();
 
-// ✅ Swagger liberado em produção para testes (depois você pode restringir)
+// Swagger - Disponível em todos os ambientes
 app.UseSwagger();
 app.UseSwaggerUI(c => {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "RemessaSegura API v1");
     c.RoutePrefix = "swagger";
+    c.DocumentTitle = "RemessaSegura API Documentation";
 });
 
+// Static Files
 app.UseStaticFiles();
 
-// ⚠️ Se der loop/erro no Koyeb, comente a linha abaixo.
-// Geralmente funciona bem com ForwardedHeaders.
+// HTTPS Redirection
+// Comentar se der problema no Koyeb
 app.UseHttpsRedirection();
 
+// CORS - ANTES de Authentication
 app.UseCors(CorsPolicy);
 
+// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Controllers
 app.MapControllers();
 
-app.Run();
+// Health Check endpoint
+app.MapGet("/health", () => Results.Ok(new {
+    status = "healthy",
+    timestamp = DateTime.UtcNow,
+    environment = app.Environment.EnvironmentName
+}))
+.AllowAnonymous();
+
+// Root endpoint
+app.MapGet("/", () => Results.Redirect("/swagger"))
+    .ExcludeFromDescription();
+
+// ===============================================
+// EXECUÇÃO
+// ===============================================
+try {
+    app.Logger.LogInformation("🚀 Iniciando RemessaSegura API...");
+    app.Logger.LogInformation("📍 Ambiente: {Environment}", app.Environment.EnvironmentName);
+    app.Logger.LogInformation("🌐 CORS configurado para: {Policy}", CorsPolicy);
+
+    app.Run();
+} catch (Exception ex) {
+    app.Logger.LogCritical(ex, "❌ Erro fatal ao iniciar a aplicação");
+    throw;
+}
