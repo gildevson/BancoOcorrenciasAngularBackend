@@ -173,7 +173,5 @@ app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
