@@ -6,7 +6,7 @@ A aplicação permite o cadastro, edição e validação de ocorrências e seus 
 
 ## 🖼️ Preview do Sistema
 
-![Portal de Ocorrências Bancárias](./docs/images/portal-screenshot.png)
+![Portal de Ocorrências Bancárias]([./docs/images/portal-screenshot.png](https://github.com/gildevson/BancoOcorrenciasAngular/blob/main/src/assets/logo/IMAGEMBANCOOCORRENCIAS.png?raw=true))
 
 ## 🚀 Tecnologias Utilizadas
 
