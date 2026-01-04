@@ -48,6 +48,8 @@ A aplicação permite o cadastro, edição e validação de ocorrências e seus 
 - 🔐 Validação de usuários
 - 🔐 Autenticação via JWT
 - 🔐 Controle de acesso
+- 🔐 Reset de senha
+- 🔐 Gerenciamento de permissões
 
 ### Portal de Notícias
 - 📰 Sistema de notícias dinâmico
@@ -58,22 +60,100 @@ A aplicação permite o cadastro, edição e validação de ocorrências e seus 
 ### Visualização de Dados
 - 📊 Gráficos e dashboards com Chart.js
 - 📊 Análise de ocorrências por instituição
+- 📊 Previsão do tempo integrada
 
-## 🏗️ Arquitetura
+## 🏗️ Arquitetura do Backend
 
-O projeto foi desenvolvido seguindo boas práticas de arquitetura e padrões de desenvolvimento:
+O projeto segue uma arquitetura em camadas bem definida, promovendo separação de responsabilidades e manutenibilidade:
+```
+backend/
+│
+├── 📁 Controllers/                    # Camada de Apresentação (API)
+│   ├── AuthController.cs             # Autenticação e autorização
+│   ├── BancosController.cs           # Gestão de bancos
+│   ├── CurrencyController.cs         # Conversão de moedas
+│   ├── HealthController.cs           # Health check da aplicação
+│   ├── NoticiasController.cs         # CRUD de notícias
+│   ├── OcorrenciasMotivoController.cs # Motivos de ocorrências
+│   ├── UsuariosController.cs         # Gestão de usuários
+│   └── WeatherForecastController.cs  # Previsão do tempo
+│
+├── 📁 Data/                           # Camada de Acesso a Dados
+│   ├── DbConnectionFactory.cs        # Factory para conexões com BD
+│   └── 📁 DataTables/                # Scripts SQL das tabelas
+│       ├── bancos.sql
+│       ├── INSERTINTOusuarios.sql
+│       ├── noticias.sql
+│       ├── ocorrencias_motivos.sql
+│       └── USUARIOS.sql
+│
+├── 📁 DTO/                            # Data Transfer Objects
+│   ├── CreateOcorrenciaMotivRequest.cs
+│   ├── CreateUsuarioRequest.cs
+│   ├── ForgotPasswordRequest.cs
+│   ├── LoginRequest.cs
+│   ├── LoginResponse.cs
+│   ├── LoginUserDto.cs
+│   ├── RegisterRequest.cs
+│   ├── ResetPasswordRequest.cs
+│   └── UpdateOcorrenciaMotivRequest.cs
+│
+├── 📁 Models/                         # Modelos de Domínio
+│   ├── Bancos.cs                     # Entidade Bancos
+│   ├── Noticia.cs                    # Entidade Notícias
+│   ├── OcorrenciaMotivo.cs           # Entidade Ocorrências
+│   ├── Permissao.cs                  # Entidade Permissões
+│   └── Usuario.cs                    # Entidade Usuários
+│
+├── 📁 Repositories/                   # Camada de Repositórios
+│   ├── BancosRepository.cs           # Repositório de Bancos
+│   ├── NoticiaRepository.cs          # Repositório de Notícias
+│   ├── OcorrenciasMotivosRepository.cs
+│   ├── PermissaoRepository.cs        # Repositório de Permissões
+│   ├── ResetSenhaRepository.cs       # Repositório Reset de Senha
+│   └── UsuarioRepository.cs          # Repositório de Usuários
+│
+└── 📁 Services/                       # Camada de Serviços (Lógica de Negócio)
+    ├── AuthService.cs                # Serviço de Autenticação
+    ├── EmailService.cs               # Serviço de E-mail
+    ├── PasswordResetService.cs       # Serviço de Reset de Senha
+    └── UsuarioService.cs             # Serviço de Usuários
+```
 
-- **Separação de responsabilidades** (Frontend/Backend)
-- **Arquitetura em camadas** no backend
-- **Componentes reutilizáveis** no Angular
-- **Containerização** com Docker
-- **Micro-ORM** para performance otimizada
-- **API RESTful** para comunicação
+### 📋 Descrição das Camadas
+
+#### **Controllers (Camada de Apresentação)**
+Responsável por receber as requisições HTTP, validar dados de entrada e retornar respostas adequadas. Cada controller gerencia um domínio específico da aplicação.
+
+#### **Services (Camada de Lógica de Negócio)**
+Contém as regras de negócio da aplicação, orquestrando operações entre repositórios e aplicando validações complexas.
+
+#### **Repositories (Camada de Acesso a Dados)**
+Implementa o padrão Repository, abstraindo o acesso ao banco de dados e fornecendo métodos para operações CRUD.
+
+#### **Models (Camada de Domínio)**
+Define as entidades do sistema que representam as tabelas do banco de dados.
+
+#### **DTO (Data Transfer Objects)**
+Objetos utilizados para transferência de dados entre camadas, garantindo que apenas informações necessárias sejam expostas.
+
+#### **Data (Infraestrutura)**
+Gerencia conexões com o banco de dados através do padrão Factory e contém scripts SQL para criação das tabelas.
+
+## 🗄️ Estrutura do Banco de Dados
+```sql
+-- Tabelas principais
+├── bancos                    # Instituições bancárias
+├── usuarios                  # Usuários do sistema
+├── noticias                  # Portal de notícias
+├── ocorrencias_motivos       # Ocorrências e motivos
+└── permissoes                # Controle de acesso
+```
 
 ## 🔗 Links do Projeto
 
-- **Frontend (Angular)**: [https://github.com/seu-usuario/ocorrencias-bancarias-frontend](https://github.com/gildevson/BancoOcorrenciasAngular/tree/main)
-- **Portal de Notícias (Node.js)**: [https://github.com/seu-usuario/portal-noticias]([https://github.com/seu-usuario/portal-noticias](https://bancosocorrencia.com/))
+- **Frontend (Angular)**: [https://github.com/gildevson/BancoOcorrenciasAngular](https://github.com/gildevson/BancoOcorrenciasAngular)
+- **Portal de Notícias**: [https://bancosocorrencia.com](https://bancosocorrencia.com)
 
 ## 📦 Dependências do Frontend
 ```json
