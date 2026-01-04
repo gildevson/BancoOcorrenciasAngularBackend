@@ -72,9 +72,8 @@ O projeto foi desenvolvido seguindo boas práticas de arquitetura e padrões de 
 
 ## 🔗 Links do Projeto
 
-- **Frontend (Angular)**: [https://github.com/seu-usuario/ocorrencias-bancarias-frontend](https://github.com/seu-usuario/ocorrencias-bancarias-frontend)
-- **Backend (.NET)**: [https://github.com/seu-usuario/ocorrencias-bancarias-backend](https://github.com/seu-usuario/ocorrencias-bancarias-backend)
-- **Portal de Notícias (Node.js)**: [https://github.com/seu-usuario/portal-noticias](https://github.com/seu-usuario/portal-noticias)
+- **Frontend (Angular)**: [https://github.com/seu-usuario/ocorrencias-bancarias-frontend](https://github.com/gildevson/BancoOcorrenciasAngular/tree/main)
+- **Portal de Notícias (Node.js)**: [https://github.com/seu-usuario/portal-noticias]([https://github.com/seu-usuario/portal-noticias](https://bancosocorrencia.com/))
 
 ## 📦 Dependências do Frontend
 ```json
