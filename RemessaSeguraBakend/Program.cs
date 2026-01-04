@@ -16,7 +16,6 @@ var builder = WebApplication.CreateBuilder(args);
 // ===============================================
 builder.Services.Configure<ForwardedHeadersOptions>(options => {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // No Koyeb/Cloud enviamos redes conhecidas como limpas para evitar bloqueios de IP
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -39,22 +38,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSingleton<DbConnectionFactory>();
 
 // ===============================================
-// 3. CORS - CONFIGURAÇÃO RESILIENTE
+// 3. CORS - CONFIGURAÇÃO PERMISSIVA PARA TESTE
 // ===============================================
 const string CorsPolicy = "Front";
 builder.Services.AddCors(options => {
     options.AddPolicy(CorsPolicy, policy => {
-        policy.SetIsOriginAllowed(origin => {
-            // Permite localhost e seus domínios oficiais
-            var host = new Uri(origin).Host;
-            return host == "localhost" ||
-                   host == "bancoocorrencia.com" ||
-                   host.EndsWith(".bancoocorrencia.com") ||
-                   host.EndsWith(".koyeb.app");
-        })
-        .AllowAnyHeader()
-        .AllowAnyMethod()
-        .AllowCredentials(); // Necessário se usar cookies ou SignalR futuramente
+        // Usamos SetIsOriginAllowed(_ => true) para garantir que qualquer 
+        // variação de domínio (com ou sem www) seja aceita pela API.
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -160,8 +154,11 @@ var app = builder.Build();
 // 8. MIDDLEWARES PIPELINE (ORDEM CRÍTICA)
 // ===============================================
 
-// 1. Deve ser o primeiro para o .NET entender o protocolo HTTPS do Koyeb
+// 1. Resolve o protocolo real (HTTPS) vindo do Proxy do Koyeb
 app.UseForwardedHeaders();
+
+// 2. O CORS DEVE vir aqui, antes de Authentication e StaticFiles
+app.UseCors(CorsPolicy);
 
 app.UseSwagger();
 app.UseSwaggerUI(c => {
@@ -171,12 +168,8 @@ app.UseSwaggerUI(c => {
 
 app.UseStaticFiles();
 
-// 2. Comente HttpsRedirection se o CORS continuar falhando no Koyeb 
-// (muitas vezes o proxy do Koyeb já resolve isso e o redirecionamento quebra o CORS)
+// 3. Mantenha desativado se o Proxy do Koyeb já gerenciar o SSL
 // app.UseHttpsRedirection(); 
-
-// 3. CORS deve vir ANTES de Authentication e Authorization
-app.UseCors(CorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
