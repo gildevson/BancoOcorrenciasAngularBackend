@@ -102,5 +102,14 @@ namespace RemessaSeguraBakend.Controllers {
             await _repo.IncrementarVisualizacoes(id);
             return Ok(new { message = "Visualização registrada." });
         }
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetById(Guid id) {
+            var noticia = await _repo.GetById(id);
+            if (noticia == null)
+                return NotFound(new { message = "Notícia não encontrada." });
+            return Ok(noticia);
+        }
+
+
     }
 }

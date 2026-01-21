@@ -192,5 +192,11 @@ namespace RemessaSeguraBakend.Repositories {
             var affected = await conn.ExecuteAsync("DELETE FROM noticias WHERE id = @Id", new { Id = id });
             return affected > 0;
         }
+
+        public async Task<Noticia?> GetById(Guid id) {
+            using var conn = _factory.CreateConnection();
+            var sql = BaseSelect + @" WHERE id = @Id LIMIT 1";
+            return await conn.QuerySingleOrDefaultAsync<Noticia>(sql, new { Id = id });
+        }
     }
 }
